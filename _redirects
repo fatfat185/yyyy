@@ -1,0 +1,6 @@
+# Cloudflare Pages 重写规则
+# 将根路径 / 指向主应用页面（200 = 内部重写，浏览器地址栏不变）
+/ /lab-observation-manager.html 200
+
+# 404 回退
+/* /404.html 404

@@ -1,0 +1,19 @@
+{
+  "name": "实验室观察管理系统",
+  "short_name": "LabObs",
+  "description": "科研实验观察时间管理与提醒工具",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#0d9488",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

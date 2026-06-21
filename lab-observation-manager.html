@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实验室观察管理系统</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --accent: #0d9488; --accent-light: #f0fdfa; --accent-dark: #0f766e;
+    --border: #e2e8f0; --text: #1e293b; --muted: #64748b;
+    --success: #059669; --warning: #d97706; --danger: #dc2626;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #f0fdfa 0%, #f8fafc 30%, #fafeff 60%, #f0fdf4 100%);
+    background-attachment: fixed; min-height: 100vh; color: var(--text);
+  }
+
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: box-shadow 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 14px;
+    cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #047857; }
+  .btn-danger { background: #fff; color: var(--danger); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #f8fafc; color: var(--text); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+  .btn-xs { padding: 3px 8px; font-size: 11px; border-radius: 5px; }
+
+  .input-field {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s; background: #fafbfc;
+  }
+  .input-field:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(13,148,136,0.08); background: #fff;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  }
+  .badge-pending  { background: #dbeafe; color: #1d4ed8; }
+  .badge-completed { background: #d1fae5; color: #065f46; }
+  .badge-overdue  { background: #fee2e2; color: #991b1b; animation: pulse-badge 2s infinite; }
+
+  @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:.55} }
+
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; font-weight: 600; }
+
+  .row-urgent { background: #fef2f2 !important; animation: pulse-row 1.5s infinite; }
+  @keyframes pulse-row { 0%,100%{background:#fef2f2} 50%{background:#fee2e2} }
+
+  .toast-container {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px; max-width: 380px; width: 100%;
+  }
+  .toast {
+    padding: 14px 18px; border-radius: 10px; color: #fff; font-weight: 500; font-size: 14px;
+    animation: slideIn .3s ease-out; box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .toast-warning { background: #d97706; }
+  .toast-danger  { background: #dc2626; }
+  .toast-info    { background: #0d9488; }
+
+  @keyframes slideIn { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,.4);
+    backdrop-filter: blur(4px); z-index: 9998;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn .15s;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal {
+    background: #fff; border-radius: 16px; padding: 28px;
+    max-width: 560px; width: 90%; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15); animation: scaleIn .2s ease-out;
+  }
+  @keyframes scaleIn { from{transform:scale(.95);opacity:0} to{transform:scale(1);opacity:1} }
+
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: #f1f5f9; position: sticky; top: 0; z-index: 1; }
+  th {
+    padding: 10px 14px; text-align: left; font-weight: 600;
+    color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+  }
+  td { padding: 10px 14px; border-top: 1px solid #f1f5f9; white-space: nowrap; }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover { background: #f8fafc; }
+
+  .photo-thumb {
+    width: 36px; height: 36px; border-radius: 6px; object-fit: cover;
+    border: 1px solid var(--border); cursor: pointer; transition: transform .15s;
+  }
+  .photo-thumb:hover { transform: scale(1.1); }
+
+  @media (max-width: 768px) {
+    .resp-grid { grid-template-columns: 1fr !important; }
+    .toast-container { left: 8px; right: 8px; max-width: none; }
+    .modal { padding: 20px; width: 95%; }
+    th, td { padding: 8px 10px; font-size: 12px; }
+    .stat-card { padding: 12px !important; }
+    .stat-value { font-size: 1.5rem !important; }
+  }
+
+  ::-webkit-scrollbar { height: 5px; width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+  @media print { .no-print { display: none !important; } body { background: #fff; } }
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+<div id="modalContainer"></div>
+
+<!-- ====== 头部 ====== -->
+<header class="border-b border-slate-200 bg-white/85 backdrop-blur sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 py-3">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+          <i class="fa fa-flask text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-800">实验室观察管理系统</h1>
+          <p class="text-xs text-slate-500">Lab Observation Manager</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <div class="text-xs text-slate-400">当前时间</div>
+          <div id="liveClock" class="mono text-sm text-slate-700"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()"><i class="fa fa-download"></i> 导出CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="openImportModal()"><i class="fa fa-upload"></i> 导入CSV</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+      <div class="stat-card card p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center"><i class="fa fa-vial text-blue-500"></i></div>
+        <div><div class="text-xs text-slate-400">样品总数</div><div class="text-xl font-bold text-slate-800" id="statSamples">0</div></div>
+      </div>
+      <div class="stat-card card p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center"><i class="fa fa-clock-o text-amber-500"></i></div>
+        <div><div class="text-xs text-slate-400">待观察</div><div class="text-xl font-bold text-amber-600" id="statPending">0</div></div>
+      </div>
+      <div class="stat-card card p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center"><i class="fa fa-check-circle text-emerald-500"></i></div>
+        <div><div class="text-xs text-slate-400">已完成</div><div class="text-xl font-bold text-emerald-600" id="statCompleted">0</div></div>
+      </div>
+      <div class="stat-card card p-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center"><i class="fa fa-exclamation-circle text-red-500"></i></div>
+        <div><div class="text-xs text-slate-400">已逾期</div><div class="text-xl font-bold text-red-600" id="statOverdue">0</div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-5">
+
+  <!-- 下一次观察 -->
+  <div id="nextCard" class="card p-5 mb-5">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <div class="text-xs text-slate-400 uppercase tracking-wide font-medium">下一次观察</div>
+        <div class="text-sm text-slate-600 mt-1">
+          <span id="nextSample">—</span> · <span id="nextPoint">—</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div id="nextCountdown" class="mono text-4xl font-bold text-teal-700">--:--:--</div>
+        <div id="nextStatus" class="badge badge-pending">待观察</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-5 resp-grid" style="grid-template-columns: 340px 1fr;">
+
+    <!-- ===== 左侧栏 ===== -->
+    <aside class="space-y-4 no-print">
+
+      <!-- 观察点配置 -->
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <i class="fa fa-sliders text-teal-600"></i> 观察点配置
+          </h3>
+        </div>
+        <div id="obsPointTags" class="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
+          <span class="text-xs text-slate-400">尚未配置观察点</span>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary btn-sm flex-1 justify-center" onclick="openAddPointModal()">
+            <i class="fa fa-plus"></i> 添加
+          </button>
+          <button class="btn btn-ghost btn-sm flex-1 justify-center" onclick="openBatchPointsModal()">
+            <i class="fa fa-list"></i> 批量
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openManagePointsModal()" title="管理">
+            <i class="fa fa-cog"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 样品管理 -->
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <i class="fa fa-vial text-teal-600"></i> 样品管理
+        </h3>
+        <div id="sampleList" class="space-y-2 mb-3 max-h-64 overflow-y-auto">
+          <p class="text-xs text-slate-400 text-center py-6">暂无样品</p>
+        </div>
+        <button class="btn btn-primary btn-sm w-full justify-center" onclick="openSampleModal()">
+          <i class="fa fa-plus"></i> 添加样品
+        </button>
+      </div>
+
+      <!-- 提醒设置 -->
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <i class="fa fa-bell text-amber-500"></i> 提醒设置
+          </h3>
+          <button class="btn btn-ghost btn-xs" onclick="openReminderModal()"><i class="fa fa-cog"></i></button>
+        </div>
+        <div id="reminderTags" class="flex flex-wrap gap-1.5 mb-1"></div>
+        <p class="text-xs text-slate-400">观察前弹出提醒</p>
+      </div>
+
+      <!-- 图例 -->
+      <div class="card p-4">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase mb-3">图例</h3>
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-center gap-2"><span class="badge badge-pending">待观察</span></div>
+          <div class="flex items-center gap-2"><span class="badge badge-completed">已完成</span></div>
+          <div class="flex items-center gap-2"><span class="badge badge-overdue">已逾期</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== 右侧面板 ===== -->
+    <section>
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h2 class="font-semibold text-slate-700 flex items-center gap-2">
+            <i class="fa fa-table text-teal-600"></i> 观察任务面板
+          </h2>
+          <div class="flex items-center gap-2">
+            <select id="filterSample" class="input-field w-auto text-sm py-1.5" onchange="renderDashboard()">
+              <option value="all">全部样品</option>
+            </select>
+            <select id="filterStatus" class="input-field w-auto text-sm py-1.5" onchange="renderDashboard()">
+              <option value="all">全部状态</option>
+              <option value="pending">待观察</option>
+              <option value="completed">已完成</option>
+              <option value="overdue">已逾期</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>样品</th>
+                <th>批次</th>
+                <th>观察点</th>
+                <th>计划时间</th>
+                <th>剩余时间</th>
+                <th>状态</th>
+                <th>完成时间</th>
+                <th>备注</th>
+                <th>照片</th>
+                <th class="no-print">操作</th>
+              </tr>
+            </thead>
+            <tbody id="dashboardBody">
+              <tr><td colspan="10" class="text-center text-slate-400 py-10">
+                <i class="fa fa-inbox text-2xl mb-2 block"></i>请先配置观察点并添加样品
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+// ============================================================================
+// Storage Keys
+// ============================================================================
+const K = {
+  samples: 'lom2_samples',
+  points: 'lom2_points',
+  reminders: 'lom2_reminders',
+  triggers: 'lom2_triggers',
+};
+const DEF_REMINDERS = [30, 10, 5];
+
+// ============================================================================
+// 数据读写
+// ============================================================================
+function loadSamples() { try { return JSON.parse(localStorage.getItem(K.samples)) || []; } catch(e) { return []; } }
+function saveSamples(d) { localStorage.setItem(K.samples, JSON.stringify(d)); }
+function loadPoints() { try { return JSON.parse(localStorage.getItem(K.points)) || []; } catch(e) { return []; } }
+function savePoints(d) { localStorage.setItem(K.points, JSON.stringify(d)); }
+function loadReminders() {
+  try { const r = JSON.parse(localStorage.getItem(K.reminders)); return (r && r.length) ? r : [...DEF_REMINDERS]; }
+  catch(e) { return [...DEF_REMINDERS]; }
+}
+function saveReminders(d) { localStorage.setItem(K.reminders, JSON.stringify(d)); }
+
+function loadTriggers() {
+  try {
+    const raw = sessionStorage.getItem(K.triggers); if (!raw) return {};
+    const p = JSON.parse(raw); const o = {};
+    for (const [k,arr] of Object.entries(p)) o[k] = new Set(arr);
+    return o;
+  } catch(e) { return {}; }
+}
+function saveTriggers(t) {
+  try {
+    const o = {}; for (const [k,s] of Object.entries(t)) o[k] = Array.from(s);
+    sessionStorage.setItem(K.triggers, JSON.stringify(o));
+  } catch(e) {}
+}
+
+// ============================================================================
+// 状态
+// ============================================================================
+let samples = [];
+let reminderTriggers = {};
+let notifGranted = false;
+let ticker = null;
+let audioCtx = null;
+
+// ============================================================================
+// 观察点格式（总分钟数 ↔ 时分显示）
+// ============================================================================
+
+/** 总分钟数 → 显示标签。例如 150 → "2h30min", 60 → "1h", 45 → "45min" */
+function pointLabel(totalMin) {
+  if (totalMin <= 0) return '0min';
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h > 0 && m > 0) return h + 'h' + m + 'min';
+  if (h > 0) return h + 'h';
+  return m + 'min';
+}
+
+/** 总分钟数 → 毫秒 */
+function pointToMs(totalMin) { return totalMin * 60 * 1000; }
+
+/**
+ * 安全解析 datetime-local 值。
+ * datetime-local 输出 "2026-06-21T16:25" 不含时区，
+ * 直接 new Date() 在不同浏览器中行为不一致（有的当UTC、有的当本地）。
+ * 这里手动拆分，确保始终按本地时间解析。
+ */
+function parseDTLocal(val) {
+  const [datePart, timePart] = val.split('T');
+  const [y, mo, d] = datePart.split('-').map(Number);
+  const [hh, mm] = (timePart || '00:00').split(':').map(Number);
+  return new Date(y, mo - 1, d, hh, mm, 0);
+}
+
+// ============================================================================
+// 工具函数
+// ============================================================================
+function fmtDT(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const wd = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())} <span class="text-xs text-slate-400">${wd}</span>`;
+}
+function fmtDTPlain(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function countdown(targetISO) {
+  const diff = new Date(targetISO).getTime() - Date.now();
+  if (diff <= 0) return { expired: true, d:0, h:0, m:0, s:0, totalSec:0 };
+  const s = Math.floor(diff / 1000);
+  return { expired: false, d: Math.floor(s/86400), h: Math.floor((s%86400)/3600), m: Math.floor((s%3600)/60), s: s%60, totalSec: s };
+}
+function fmtCD(cd) {
+  if (cd.expired) return '<span class="text-red-600 font-semibold">已到时间</span>';
+  if (cd.d > 0) return `${cd.d}天${String(cd.h).padStart(2,'0')}时${String(cd.m).padStart(2,'0')}分`;
+  return `${String(cd.h).padStart(2,'0')}:${String(cd.m).padStart(2,'0')}:${String(cd.s).padStart(2,'0')}`;
+}
+function fmtCDPlain(cd) {
+  if (cd.expired) return '已到时间';
+  if (cd.d > 0) return `${cd.d}天${String(cd.h).padStart(2,'0')}时${String(cd.m).padStart(2,'0')}分${String(cd.s).padStart(2,'0')}秒`;
+  return `${String(cd.h).padStart(2,'0')}:${String(cd.m).padStart(2,'0')}:${String(cd.s).padStart(2,'0')}`;
+}
+
+function getStatus(obs) {
+  if (obs.completedTime) return 'completed';
+  if (new Date(obs.scheduledTime).getTime() < Date.now()) return 'overdue';
+  return 'pending';
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function uid() { return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+// ============================================================================
+// Toast
+// ============================================================================
+function showToast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  const ico = { warning:'fa-exclamation-triangle', danger:'fa-exclamation-circle', info:'fa-info-circle' };
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<i class="fa ${ico[type]||'fa-info-circle'} mt-0.5"></i><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(120%)'; t.style.transition='all .3s'; setTimeout(()=>t.remove(),300); }, 4000);
+}
+
+// ============================================================================
+// 根据观察点配置和制备时间生成观察任务
+// ============================================================================
+function generateObservations(prepTimeISO) {
+  const points = loadPoints();
+  return points.map(p => ({
+    totalMinutes: p.totalMinutes,
+    scheduledTime: new Date(new Date(prepTimeISO).getTime() + pointToMs(p.totalMinutes)).toISOString(),
+    completedTime: null,
+    observationNotes: '',
+    photos: [],
+  }));
+}
+
+function recalcAllObservations() {
+  const points = loadPoints();
+  samples.forEach(sample => {
+    const existing = sample.observations || [];
+    sample.observations = points.map(p => {
+      const old = existing.find(o => o.totalMinutes === p.totalMinutes);
+      if (old && old.completedTime) return old;
+      return {
+        totalMinutes: p.totalMinutes,
+        scheduledTime: new Date(new Date(sample.preparationTime).getTime() + pointToMs(p.totalMinutes)).toISOString(),
+        completedTime: null,
+        observationNotes: old ? old.observationNotes : '',
+        photos: old ? old.photos : [],
+      };
+    });
+  });
+  // 清理无用的触发记录
+  const minSet = new Set(points.map(p => p.totalMinutes));
+  Object.keys(reminderTriggers).forEach(k => {
+    const parts = k.split('__');
+    if (parts.length === 3 && !minSet.has(Number(parts[2]))) delete reminderTriggers[k];
+  });
+  saveTriggers(reminderTriggers);
+}
+
+// ============================================================================
+// 统计
+// ============================================================================
+function updateStats() {
+  let p=0, c=0, o=0;
+  samples.forEach(s => {
+    (s.observations||[]).forEach(obs => {
+      const st = getStatus(obs);
+      if (st==='pending') p++; else if (st==='completed') c++; else if (st==='overdue') o++;
+    });
+  });
+  document.getElementById('statSamples').textContent = samples.length;
+  document.getElementById('statPending').textContent = p;
+  document.getElementById('statCompleted').textContent = c;
+  document.getElementById('statOverdue').textContent = o;
+}
+
+// ============================================================================
+// 渲染
+// ============================================================================
+function renderPointTags() {
+  const c = document.getElementById('obsPointTags');
+  const pts = loadPoints();
+  if (!pts.length) { c.innerHTML = '<span class="text-xs text-slate-400">尚未配置观察点</span>'; return; }
+  c.innerHTML = pts.map(p => `<span class="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-1 rounded font-mono">${pointLabel(p.totalMinutes)}</span>`).join('');
+}
+
+function renderSampleList() {
+  const c = document.getElementById('sampleList');
+  if (!samples.length) { c.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">暂无样品</p>'; return; }
+  c.innerHTML = samples.map(s => {
+    const p = (s.observations||[]).filter(o=>getStatus(o)==='pending').length;
+    const o = (s.observations||[]).filter(o=>getStatus(o)==='overdue').length;
+    const d = (s.observations||[]).filter(o=>getStatus(o)==='completed').length;
+    let sm = '';
+    if (o>0) sm += `<span class="text-red-600 font-medium">${o}逾期</span> `;
+    if (p>0) sm += `<span class="text-blue-600">${p}待观察</span> `;
+    if (d>0) sm += `<span class="text-emerald-600">${d}完成</span>`;
+    if (!sm) sm = '<span class="text-slate-400">全部完成 ✓</span>';
+
+    return `<div class="flex items-start justify-between p-2.5 rounded-lg border border-slate-100 bg-slate-50/50">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-sm text-slate-800">${esc(s.name)}</span>
+          ${s.batch?`<span class="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${esc(s.batch)}</span>`:''}
+        </div>
+        <div class="text-xs text-slate-400 mt-0.5">${fmtDT(s.preparationTime)}</div>
+        ${s.notes?`<div class="text-xs text-slate-500 mt-0.5 truncate">${esc(s.notes)}</div>`:''}
+        <div class="text-xs mt-1">${sm}</div>
+      </div>
+      <div class="flex items-center gap-1 ml-2 flex-shrink-0">
+        <button class="btn btn-ghost btn-xs" onclick="openSampleModal('${s.id}')"><i class="fa fa-pencil"></i></button>
+        <button class="btn btn-ghost btn-xs" onclick="copySample('${s.id}')"><i class="fa fa-copy"></i></button>
+        <button class="btn btn-danger btn-xs" onclick="deleteSample('${s.id}')"><i class="fa fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard() {
+  const tbody = document.getElementById('dashboardBody');
+  const fs = document.getElementById('filterSample')?.value || 'all';
+  const fst = document.getElementById('filterStatus')?.value || 'all';
+
+  const sel = document.getElementById('filterSample');
+  if (sel) { const cv = sel.value; sel.innerHTML = '<option value="all">全部样品</option>'; samples.forEach(s=>{sel.innerHTML+=`<option value="${s.id}">${esc(s.name)}</option>`;}); sel.value = cv; }
+
+  let rows = [];
+  samples.forEach(sample => {
+    if (fs !== 'all' && sample.id !== fs) return;
+    (sample.observations||[]).forEach(obs => {
+      const st = getStatus(obs);
+      if (fst !== 'all' && st !== fst) return;
+      rows.push({ sample, obs, status: st });
+    });
+  });
+
+  // 仅按计划观察时间从早到晚排序
+  rows.sort((a,b) => new Date(a.obs.scheduledTime).getTime() - new Date(b.obs.scheduledTime).getTime());
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-slate-400 py-10"><i class="fa fa-info-circle text-xl mb-2 block"></i>没有匹配的观察任务</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(({ sample, obs, status }) => {
+    const cd = countdown(obs.scheduledTime);
+    const min = cd.totalSec / 60;
+    const rowClass = (status==='overdue' || (status==='pending' && min<=5)) ? 'row-urgent' : '';
+    let badge = '';
+    if (status==='pending') badge = '<span class="badge badge-pending"><i class="fa fa-circle-thin"></i> 待观察</span>';
+    else if (status==='completed') badge = '<span class="badge badge-completed"><i class="fa fa-check-circle"></i> 已完成</span>';
+    else badge = '<span class="badge badge-overdue"><i class="fa fa-exclamation-circle"></i> 已逾期</span>';
+
+    let photosHtml = '<span class="text-xs text-slate-400">—</span>';
+    if (obs.photos && obs.photos.length) {
+      photosHtml = obs.photos.map((p,i) => `<img src="${p}" class="photo-thumb" onclick="viewPhoto('${sample.id}',${obs.totalMinutes},${i})">`).join('');
+    }
+
+    const noteDisp = obs.observationNotes
+      ? `<span class="text-xs text-slate-500 max-w-[100px] truncate block" title="${esc(obs.observationNotes)}">${esc(obs.observationNotes)}</span>`
+      : '<span class="text-xs text-slate-400">—</span>';
+
+    let actions = '';
+    if (status==='pending' || status==='overdue') {
+      actions = `<div class="flex items-center gap-1">
+        <button class="btn btn-success btn-xs" onclick="completeObs('${sample.id}',${obs.totalMinutes})"><i class="fa fa-check"></i> 完成</button>
+        <button class="btn btn-ghost btn-xs" onclick="openObsNotes('${sample.id}',${obs.totalMinutes})"><i class="fa fa-sticky-note"></i></button>
+      </div>`;
+    } else {
+      actions = `<button class="btn btn-ghost btn-xs" onclick="openObsNotes('${sample.id}',${obs.totalMinutes})"><i class="fa fa-sticky-note"></i></button>`;
+    }
+
+    return `<tr class="${rowClass}">
+      <td><span class="font-semibold text-slate-700">${esc(sample.name)}</span></td>
+      <td><span class="text-xs text-slate-500">${sample.batch?esc(sample.batch):'—'}</span></td>
+      <td><span class="font-mono text-sm font-medium">${pointLabel(obs.totalMinutes)}</span></td>
+      <td>${fmtDT(obs.scheduledTime)}</td>
+      <td class="mono text-sm" data-cd="${obs.scheduledTime}">${fmtCD(cd)}</td>
+      <td>${badge}</td>
+      <td class="text-xs text-slate-500">${obs.completedTime?fmtDT(obs.completedTime):'—'}</td>
+      <td>${noteDisp}</td>
+      <td>${photosHtml}</td>
+      <td class="no-print">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderReminderTags() {
+  const c = document.getElementById('reminderTags');
+  const list = loadReminders();
+  if (!list.length) { c.innerHTML = '<span class="text-xs text-slate-400">提醒已关闭</span>'; return; }
+  c.innerHTML = list.map(t => `<span class="text-xs ${t<=5?'bg-red-50 text-red-600 border-red-200':'bg-amber-50 text-amber-700 border-amber-200'} border px-2 py-1 rounded font-mono">${t}分钟前</span>`).join('');
+}
+
+// ============================================================================
+// 下一次观察
+// ============================================================================
+function updateNextCard() {
+  let next=null, nt=Infinity;
+  samples.forEach(s => {
+    (s.observations||[]).forEach(o => {
+      if (getStatus(o)!=='pending') return;
+      const t = new Date(o.scheduledTime).getTime();
+      if (t < nt) { nt=t; next={sample:s, obs:o}; }
+    });
+  });
+  const card = document.getElementById('nextCard');
+  if (next) {
+    const cd = countdown(next.obs.scheduledTime);
+    document.getElementById('nextSample').textContent = next.sample.name;
+    document.getElementById('nextPoint').textContent = pointLabel(next.obs.totalMinutes);
+    document.getElementById('nextCountdown').textContent = fmtCDPlain(cd);
+    const st = document.getElementById('nextStatus');
+    const min = cd.totalSec/60;
+    if (cd.expired) {
+      st.className='badge badge-overdue'; st.textContent='已到时间';
+      card.style.boxShadow='0 0 0 3px rgba(220,38,38,.3)';
+      document.getElementById('nextCountdown').className='mono text-4xl font-bold text-red-600';
+    } else if (min<=5) {
+      st.className='badge badge-overdue'; st.textContent='紧急';
+      card.style.boxShadow='0 0 0 3px rgba(220,38,38,.3)';
+      document.getElementById('nextCountdown').className='mono text-4xl font-bold text-red-600';
+    } else if (min<=30) {
+      st.className='badge badge-pending'; st.textContent='即将';
+      card.style.boxShadow='0 0 0 3px rgba(217,119,6,.25)';
+      document.getElementById('nextCountdown').className='mono text-4xl font-bold text-amber-600';
+    } else {
+      st.className='badge badge-pending'; st.textContent='待观察';
+      card.style.boxShadow='';
+      document.getElementById('nextCountdown').className='mono text-4xl font-bold text-teal-700';
+    }
+  } else {
+    document.getElementById('nextSample').textContent='—';
+    document.getElementById('nextPoint').textContent='所有任务已完成 ✓';
+    document.getElementById('nextCountdown').textContent='已完成';
+    document.getElementById('nextCountdown').className='mono text-4xl font-bold text-emerald-600';
+    document.getElementById('nextStatus').className='badge badge-completed';
+    document.getElementById('nextStatus').textContent='全部完成';
+    card.style.boxShadow='';
+  }
+}
+
+function updateAllCountdowns() {
+  document.getElementById('liveClock').textContent = fmtDTPlain(new Date().toISOString());
+  updateNextCard();
+  document.querySelectorAll('[data-cd]').forEach(el => { el.innerHTML = fmtCD(countdown(el.getAttribute('data-cd'))); });
+}
+
+// ============================================================================
+// 提醒
+// ============================================================================
+function checkReminders() {
+  const now = Date.now();
+  const thresholds = loadReminders();
+  let urgent = false;
+
+  samples.forEach(sample => {
+    (sample.observations||[]).forEach(obs => {
+      if (getStatus(obs) !== 'pending') return;
+      const diffMin = (new Date(obs.scheduledTime).getTime() - now) / 60000;
+      const key = `${sample.id}__${obs.totalMinutes}`;
+      if (!reminderTriggers[key]) reminderTriggers[key] = new Set();
+
+      if (diffMin <= 5 && diffMin > 0) urgent = true;
+
+      thresholds.forEach(th => {
+        if (diffMin <= th && diffMin > th - (1/60) && !reminderTriggers[key].has(th)) {
+          reminderTriggers[key].add(th);
+          saveTriggers(reminderTriggers);
+          showToast(`<strong>${esc(sample.name)}</strong> · ${pointLabel(obs.totalMinutes)} 将在 <strong>${th}分钟</strong>后观察`, th<=5?'danger':'warning');
+          if (th <= 5) beep();
+        }
+      });
+
+      if (diffMin <= 0 && !reminderTriggers[key].has('due')) {
+        reminderTriggers[key].add('due');
+        saveTriggers(reminderTriggers);
+        showToast(`<strong>${esc(sample.name)}</strong> · ${pointLabel(obs.totalMinutes)} <strong>观察时间到！</strong>`, 'danger');
+        notify(`🧪 观察时间到：${sample.name}`, `${pointLabel(obs.totalMinutes)} 观察时间已到！`);
+        beep(); setTimeout(beep,800); setTimeout(beep,1600);
+      }
+    });
+  });
+
+  document.title = urgent ? '⚠️ 观察即将到期！— 实验室观察管理' : '实验室观察管理系统';
+}
+
+function beep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const n = audioCtx.currentTime;
+    [880,1100,1320].forEach((f,i) => {
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(.3,n+i*.2); g.gain.exponentialRampToValueAtTime(.01,n+i*.2+.15);
+      o.connect(g); g.connect(audioCtx.destination); o.start(n+i*.2); o.stop(n+i*.2+.15);
+    });
+  } catch(e) {}
+}
+async function reqNotif() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { notifGranted=true; return; }
+  if (Notification.permission !== 'denied') { notifGranted = (await Notification.requestPermission()) === 'granted'; }
+}
+function notify(title, body) {
+  if (!notifGranted) return;
+  try { new Notification(title, { body, tag:'lom', requireInteraction:true, icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🧪</text></svg>' }); } catch(e) {}
+}
+
+// ============================================================================
+// 完成观察
+// ============================================================================
+function completeObs(sampleId, totalMinutes) {
+  const sample = samples.find(s => s.id === sampleId);
+  if (!sample) return;
+  const obs = (sample.observations||[]).find(o => o.totalMinutes === totalMinutes);
+  if (!obs) return;
+  obs.completedTime = new Date().toISOString();
+  delete reminderTriggers[`${sampleId}__${totalMinutes}`];
+  saveTriggers(reminderTriggers);
+  saveSamples(samples);
+  renderAll();
+  showToast(`<strong>${esc(sample.name)}</strong> · ${pointLabel(totalMinutes)} 已标记为完成 ✓`, 'info');
+}
+
+// ============================================================================
+// 样品 CRUD
+// ============================================================================
+function openSampleModal(existingId) {
+  const ex = existingId ? samples.find(s => s.id === existingId) : null;
+  const title = ex ? '编辑样品' : '添加样品';
+
+  // 构造 datetime-local 默认值（始终为本地时间）
+  function localDTVal(date) {
+    const d = date || new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  const prepVal = ex ? localDTVal(new Date(ex.preparationTime)) : localDTVal(new Date());
+
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-slate-800">${title}</h3>
+          <button class="text-slate-400 hover:text-slate-600" onclick="closeModal()"><i class="fa fa-times text-lg"></i></button>
+        </div>
+        <form onsubmit="saveSample(event,'${existingId||''}')" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-1">样品名称</label>
+            <input type="text" id="sName" class="input-field" value="${esc(ex?.name||'')}" placeholder="例如：S1" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-1">实验批次 <span class="text-slate-400 font-normal">（选填）</span></label>
+            <input type="text" id="sBatch" class="input-field" value="${esc(ex?.batch||'')}" placeholder="例如：Batch-01">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-1">起始时间 <span class="text-xs text-teal-600 font-normal">（默认当前时间）</span></label>
+            <input type="datetime-local" id="sPrep" class="input-field" value="${prepVal}" required>
+            <p class="text-xs text-slate-400 mt-1">观察时间 = 此时间 + 观察间隔。留空默认即为此刻。</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-1">备注 <span class="text-slate-400 font-normal">（选填）</span></label>
+            <textarea id="sNotes" class="input-field" rows="2" placeholder="实验备注...">${esc(ex?.notes||'')}</textarea>
+          </div>
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" class="btn btn-ghost" onclick="closeModal()">取消</button>
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> ${ex?'更新':'保存'}</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+  setTimeout(() => { const el = document.getElementById(ex?'sPrep':'sName'); if(el) el.focus(); }, 150);
+}
+
+function saveSample(e, existingId) {
+  e.preventDefault();
+  const name = document.getElementById('sName').value.trim();
+  const batch = document.getElementById('sBatch').value.trim();
+  const prepRaw = document.getElementById('sPrep').value;
+  const notes = document.getElementById('sNotes').value.trim();
+  if (!name || !prepRaw) return;
+
+  if (!existingId && samples.some(s => s.name === name)) { showToast(`样品名称 "${name}" 已存在。`, 'warning'); return; }
+
+  // ★ 安全解析：手动拆分 datetime-local 值
+  const prep = parseDTLocal(prepRaw);
+  const prepISO = prep.toISOString();
+
+  if (existingId) {
+    const sample = samples.find(s => s.id === existingId);
+    if (!sample) return;
+    const oldPrep = sample.preparationTime;
+    sample.name = name; sample.batch = batch; sample.preparationTime = prepISO; sample.notes = notes;
+    if (oldPrep !== prepISO) {
+      const pts = loadPoints();
+      const oldObs = sample.observations || [];
+      sample.observations = pts.map(p => {
+        const old = oldObs.find(o => o.totalMinutes === p.totalMinutes);
+        if (old && old.completedTime) return old;
+        return {
+          totalMinutes: p.totalMinutes,
+          scheduledTime: new Date(prep.getTime() + pointToMs(p.totalMinutes)).toISOString(),
+          completedTime: null, observationNotes: old?old.observationNotes:'', photos: old?old.photos:[],
+        };
+      });
+    }
+    Object.keys(reminderTriggers).forEach(k => { if (k.startsWith(existingId+'__')) delete reminderTriggers[k]; });
+    saveTriggers(reminderTriggers);
+  } else {
+    samples.push({
+      id: uid(), name, batch, preparationTime: prepISO, notes,
+      observations: generateObservations(prepISO),
+    });
+  }
+  saveSamples(samples);
+  closeModal();
+  renderAll();
+  showToast(`样品 <strong>${esc(name)}</strong> ${existingId?'已更新':'已添加'}。`, 'info');
+}
+
+function copySample(id) {
+  const src = samples.find(s => s.id === id);
+  if (!src) return;
+  const newSample = {
+    ...src, id: uid(), name: src.name + '-copy',
+    observations: (src.observations||[]).map(o => ({
+      ...o,
+      scheduledTime: new Date(Date.now() + pointToMs(o.totalMinutes)).toISOString(),
+      completedTime: null, observationNotes: '', photos: [],
+    })),
+  };
+  samples.push(newSample);
+  saveSamples(samples);
+  renderAll();
+  showToast(`已复制 → <strong>${esc(newSample.name)}</strong>`, 'info');
+}
+
+function deleteSample(id) {
+  const s = samples.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm(`确定删除样品 "${s.name}" 及其所有观察记录吗？`)) return;
+  samples = samples.filter(x => x.id !== id);
+  Object.keys(reminderTriggers).forEach(k => { if (k.startsWith(id+'__')) delete reminderTriggers[k]; });
+  saveTriggers(reminderTriggers);
+  saveSamples(samples);
+  renderAll();
+  showToast(`样品 <strong>${esc(s.name)}</strong> 已删除。`, 'info');
+}
+
+// ============================================================================
+// 观察点：添加（小时 + 分钟双输入）
+// ============================================================================
+function openAddPointModal() {
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:440px">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-slate-800">添加观察点</h3>
+          <button class="text-slate-400 hover:text-slate-600" onclick="closeModal()"><i class="fa fa-times text-lg"></i></button>
+        </div>
+        <form onsubmit="addPoint(event)" class="space-y-4">
+          <p class="text-xs text-slate-500">设置观察间隔时间。例如 2小时30分 → 小时=2, 分钟=30。</p>
+          <div class="flex gap-3 items-end">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-slate-500 mb-1">小时</label>
+              <input type="number" id="ptH" class="input-field" value="1" min="0" max="9999" step="any" required
+                oninput="var h=parseInt(this.value)||0,m=parseInt(document.getElementById('ptM').value)||0,tm=h*60+m;document.getElementById('ptPreview').textContent=tm>0?pointLabel(tm):'0min';">
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-slate-500 mb-1">分钟</label>
+              <input type="number" id="ptM" class="input-field" value="0" min="0" max="59" step="any"
+                oninput="var h=parseInt(document.getElementById('ptH').value)||0,m=parseInt(this.value)||0,tm=h*60+m;document.getElementById('ptPreview').textContent=tm>0?pointLabel(tm):'0min';">
+            </div>
+            <div class="text-sm text-slate-500 pb-2">= <span id="ptPreview" class="font-mono font-semibold text-teal-700">1h</span></div>
+          </div>
+          <p class="text-xs text-slate-400">观察时间 = 起始时间 + 此间隔。例如起始 16:25 + 1h = 17:25。</p>
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" class="btn btn-ghost" onclick="closeModal()">取消</button>
+            <button type="submit" class="btn btn-primary"><i class="fa fa-plus"></i> 添加</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  setTimeout(() => { const el = document.getElementById('ptH'); if(el){el.focus();el.select();} }, 150);
+}
+
+function addPoint(e) {
+  e.preventDefault();
+  const h = parseInt(document.getElementById('ptH').value) || 0;
+  const m = parseInt(document.getElementById('ptM').value) || 0;
+  const totalMinutes = h * 60 + m;
+  if (totalMinutes <= 0) { showToast('观察时间必须大于 0。', 'warning'); return; }
+
+  const points = loadPoints();
+  if (points.some(p => p.totalMinutes === totalMinutes)) {
+    showToast(`观察点 ${pointLabel(totalMinutes)} 已存在。`, 'warning'); return;
+  }
+  points.push({ totalMinutes, hours: h, minutes: m });
+  points.sort((a,b) => a.totalMinutes - b.totalMinutes);
+  savePoints(points);
+  recalcAllObservations();
+  saveSamples(samples);
+  closeModal();
+  renderAll();
+  showToast(`观察点 <strong>${pointLabel(totalMinutes)}</strong> 已添加，所有样品已重新计算。`, 'info');
+}
+
+// ============================================================================
+// 批量添加
+// ============================================================================
+function openBatchPointsModal() {
+  const presets = [
+    { label: '标准 1h–120h',      val: '1h,2h,4h,6h,8h,24h,48h,72h,96h,120h' },
+    { label: '密集前期',           val: '30min,1h,2h,4h,6h,8h,24h' },
+    { label: '长期观察',           val: '1h,12h,1d,2d,3d,5d,7d,14d' },
+    { label: '1小时渐隔',          val: '1h,2h,3h,4h,5h,6h,8h,12h,24h' },
+    { label: '含半小时',           val: '30min,1h,1h30min,2h,3h,4h,6h,8h,24h' },
+    { label: '含 2h30min',         val: '30min,1h,2h30min,4h,6h,8h,24h,48h' },
+  ];
+
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:540px">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-slate-800">批量添加观察点</h3>
+          <button class="text-slate-400 hover:text-slate-600" onclick="closeModal()"><i class="fa fa-times text-lg"></i></button>
+        </div>
+        <form onsubmit="batchAddPoints(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-1">输入观察点</label>
+            <textarea id="batchInput" class="input-field" rows="3" placeholder="例如：1h,2h,4h,6h,8h,24h,48h,72h"></textarea>
+            <p class="text-xs text-slate-400 mt-1">
+              逗号分隔。支持格式：<code>1h</code> <code>2h30min</code> <code>45min</code> <code>3d</code><br>
+              也支持中文：<code>1小时</code> <code>30分钟</code> <code>7天</code>
+            </p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-500 mb-2">快捷预设</label>
+            <div class="flex flex-wrap gap-1.5">
+              ${presets.map(p => `<button type="button" class="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 border border-slate-200 px-2.5 py-1 rounded transition" onclick="document.getElementById('batchInput').value='${p.val}'">${p.label}</button>`).join('')}
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" class="btn btn-ghost" onclick="closeModal()">取消</button>
+            <button type="submit" class="btn btn-primary"><i class="fa fa-plus"></i> 批量添加</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+  setTimeout(() => { const el = document.getElementById('batchInput'); if(el){el.focus();el.select();} }, 150);
+}
+
+function batchAddPoints(e) {
+  e.preventDefault();
+  const raw = document.getElementById('batchInput').value;
+
+  // 正则匹配：识别多种格式
+  // "2h30min" / "1h" / "45min" / "3d" / "2小时30分" / "1小时" / "30分钟" / "7天"
+  const patterns = [
+    // XhYmin 格式（必须放在 Xh 和 Ymin 前面）
+    /(\d+)\s*h\s*(\d+)\s*min/g,
+    /(\d+)\s*小时\s*(\d+)\s*分/g,
+    // Xd
+    /(\d+)\s*d\b/g,
+    /(\d+)\s*天\b/g,
+    // Xh
+    /(\d+)\s*h\b/g,
+    /(\d+)\s*小时\b/g,
+    // Xmin
+    /(\d+)\s*min\b/g,
+    /(\d+)\s*分钟\b/g,
+  ];
+
+  const found = [];
+  // 为了避免重复匹配，先标记已消费的位置
+  let consumed = new Array(raw.length).fill(false);
+
+  // 优先匹配 XhYmin / X小时Y分
+  for (const re of patterns.slice(0, 2)) {
+    let m;
+    while ((m = re.exec(raw)) !== null) {
+      const h = parseInt(m[1]);
+      const min = parseInt(m[2]);
+      found.push({ totalMinutes: h * 60 + min, hours: h, minutes: min, index: m.index });
+      for (let i = m.index; i < m.index + m[0].length; i++) consumed[i] = true;
+    }
+  }
+
+  // 匹配单独的单位
+  for (const re of patterns.slice(2)) {
+    let m;
+    while ((m = re.exec(raw)) !== null) {
+      // 检查是否已被 XhYmin 消费
+      if (consumed[m.index]) continue;
+      const val = parseInt(m[1]);
+      let totalMinutes;
+      const pat = m[0];
+      if (/d|天/.test(pat)) totalMinutes = val * 1440;
+      else if (/h|小时/.test(pat)) totalMinutes = val * 60;
+      else totalMinutes = val;
+
+      if (totalMinutes > 0) {
+        found.push({
+          totalMinutes,
+          hours: Math.floor(totalMinutes / 60),
+          minutes: totalMinutes % 60,
+          index: m.index,
+        });
+      }
+    }
+  }
+
+  // 去重 + 按 index 排序
+  const seen = new Set();
+  const unique = [];
+  found.sort((a,b) => a.index - b.index).forEach(p => {
+    if (!seen.has(p.totalMinutes)) { seen.add(p.totalMinutes); unique.push(p); }
+  });
+
+  if (!unique.length) { showToast('未识别到有效观察点。请使用如：1h, 2h30min, 45min, 3d', 'warning'); return; }
+
+  const points = loadPoints();
+  let added = 0;
+  unique.forEach(p => {
+    if (!points.some(x => x.totalMinutes === p.totalMinutes)) {
+      points.push({ totalMinutes: p.totalMinutes, hours: p.hours, minutes: p.minutes });
+      added++;
+    }
+  });
+
+  if (added === 0) { showToast('这些观察点都已存在。', 'warning'); return; }
+
+  points.sort((a,b) => a.totalMinutes - b.totalMinutes);
+  savePoints(points);
+  recalcAllObservations();
+  saveSamples(samples);
+  closeModal();
+  renderAll();
+  showToast(`已添加 <strong>${added}</strong> 个观察点，所有样品已重新计算。`, 'info');
+}
+
+// ============================================================================
+// 管理观察点
+// ============================================================================
+function openManagePointsModal() {
+  const points = loadPoints();
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-sliders text-teal-600 mr-2"></i>管理观察点</h3>
+          <button class="text-slate-400 hover:text-slate-600" onclick="closeModal()"><i class="fa fa-times text-lg"></i></button>
+        </div>
+        <div id="managePointList" class="space-y-2 mb-4 max-h-72 overflow-y-auto">
+          ${points.length===0?'<p class="text-xs text-slate-400 text-center py-6">没有观察点</p>':''}
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+          <button class="btn btn-danger btn-sm" onclick="clearAllPoints()"><i class="fa fa-trash"></i> 清空全部</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeModal()">关闭</button>
+        </div>
+      </div>
+    </div>`;
+
+  if (points.length > 0) {
+    const list = document.getElementById('managePointList');
+    list.innerHTML = points.map((p,i) => `
+      <div class="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+        <span class="text-xs text-slate-400 w-6 font-mono">#${i+1}</span>
+        <span class="font-mono text-sm font-medium flex-1">${pointLabel(p.totalMinutes)}</span>
+        <span class="text-xs text-slate-400">${p.hours>0?p.hours+'小时':''}${p.minutes>0?p.minutes+'分':(p.hours===0?'0分':'')}</span>
+        <button class="text-red-400 hover:text-red-600 p-1" onclick="deletePoint(${i})"><i class="fa fa-trash"></i></button>
+      </div>
+    `).join('');
+  }
+}
+
+function deletePoint(index) {
+  const points = loadPoints();
+  if (index<0||index>=points.length) return;
+  const removed = points[index];
+  points.splice(index,1);
+  savePoints(points);
+  recalcAllObservations();
+  saveSamples(samples);
+  openManagePointsModal();
+  renderPointTags();
+  renderDashboard();
+  updateNextCard();
+  updateStats();
+  showToast(`观察点 ${pointLabel(removed.totalMinutes)} 已删除。`, 'info');
+}
+
+function clearAllPoints() {
+  if (!confirm('确定清空所有观察点吗？未完成的观察任务也将被清除。')) return;
+  savePoints([]);
+  recalcAllObservations();
+  saveSamples(samples);
+  closeModal();
+  renderAll();
+  showToast('所有观察点已清空。', 'info');
+}
+
+// ============================================================================
+// 提醒阈值（同前）
+// ============================================================================
+function openReminderModal() {
+  const thresholds = loadReminders();
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:500px">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-bell text-amber-500 mr-2"></i>提醒阈值设置</h3>
+          <button class="text-slate-400 hover:text-slate-600" onclick="closeModal()"><i class="fa fa-times text-lg"></i></button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">观察时间到达前多少分钟触发提醒（从大到小）</p>
+        <div id="remEditList" class="space-y-2 mb-4 max-h-56 overflow-y-auto">
+          ${thresholds.length===0?'<p class="text-xs text-slate-400 text-center py-4">提醒已关闭</p>':thresholds.map((t,i)=>`
+            <div class="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+              <span class="text-xs text-slate-400 w-6 font-mono">#${i+1}</span>
+              <input type="number" class="input-field flex-1 py-1.5 text-sm rem-inp" value="${t}" min="1" max="1440" step="any">
+              <span class="text-xs text-slate-400 w-14">分钟前</span>
+              <button class="text-red-400 hover:text-red-600 p-1" onclick="this.closest('.flex').remove();updRC()"><i class="fa fa-trash"></i></button>
+            </div>`).join('')}
+        </div>
+        <div class="flex items-center gap-2 mb-4">
+          <button class="btn btn-ghost btn-sm" onclick="addRemRow()"><i class="fa fa-plus"></i> 添加</button>
+          <button class="btn btn-ghost btn-sm" onclick="sortRemRows()"><i class="fa fa-sort-numeric-desc"></i> 排序</button>
+          <span class="text-xs text-slate-400 ml-auto" id="remCnt">${thresholds.length}个</span>
+        </div>
+        <div class="flex flex-wrap gap-1.5 mb-4">
+          <button class="text-xs bg-slate-100 hover:bg-amber-50 border px-2 py-1 rounded" onclick="fillRem([30,10,5])">标准</button>
+          <button class="text-xs bg-slate-100 hover:bg-amber-50 border px-2 py-1 rounded" onclick="fillRem([60,30,15,5])">频繁</button>
+          <button class="text-xs bg-slate-100 hover:bg-amber-50 border px-2 py-1 rounded" onclick="fillRem([15,5])">简洁</button>
+          <button class="text-xs bg-slate-100 hover:bg-red-50 hover:text-red-600 border px-2 py-1 rounded" onclick="fillRem([])">关闭</button>
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+          <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveReminders()"><i class="fa fa-save"></i> 保存</button>
+        </div>
+      </div>
+    </div>`;
+
+  window.updRC = function() {
+    const cnt = document.querySelectorAll('.rem-inp').length;
+    const el = document.getElementById('remCnt'); if(el) el.textContent = cnt>0?`${cnt}个`:'已关闭';
+    if (cnt===0) { const l=document.getElementById('remEditList'); if(l) l.innerHTML='<p class="text-xs text-slate-400 text-center py-4">提醒已关闭</p>'; }
+  };
+  window.addRemRow = function(v=15) {
+    const l=document.getElementById('remEditList'); const e=l.querySelector('p'); if(e) e.remove();
+    const i=l.querySelectorAll('.rem-inp').length;
+    const d=document.createElement('div'); d.className='flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2';
+    d.innerHTML=`<span class="text-xs text-slate-400 w-6 font-mono">#${i+1}</span><input type="number" class="input-field flex-1 py-1.5 text-sm rem-inp" value="${v}" min="1" max="1440" step="any"><span class="text-xs text-slate-400 w-14">分钟前</span><button class="text-red-400 hover:text-red-600 p-1" onclick="this.closest('.flex').remove();updRC()"><i class="fa fa-trash"></i></button>`;
+    l.appendChild(d); updRC(); d.querySelector('input').focus();
+  };
+  window.sortRemRows = function() {
+    const l=document.getElementById('remEditList');
+    Array.from(l.querySelectorAll('.flex')).sort((a,b)=>(parseInt(b.querySelector('input')?.value)||0)-(parseInt(a.querySelector('input')?.value)||0)).forEach((r,i)=>{r.querySelector('span').textContent=`#${i+1}`;l.appendChild(r);});
+  };
+  window.fillRem = function(vals) {
+    const l=document.getElementById('remEditList');
+    if(!vals.length){l.innerHTML='<p class="text-xs text-slate-400 text-center py-4">提醒已关闭</p>';updRC();return;}
+    l.innerHTML=vals.map((t,i)=>`<div class="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2"><span class="text-xs text-slate-400 w-6 font-mono">#${i+1}</span><input type="number" class="input-field flex-1 py-1.5 text-sm rem-inp" value="${t}" min="1" max="1440" step="any"><span class="text-xs text-slate-400 w-14">分钟前</span><button class="text-red-400 hover:text-red-600 p-1" onclick="this.closest('.flex').remove();updRC()"><i class="fa fa-trash"></i></button></div>`).join('');
+    updRC();
+  };
+}
+
+function saveReminders() {
+  const vals=[], seen=new Set();
+  for (const inp of document.querySelectorAll('.rem-inp')) {
+    const v=parseInt(inp.value);
+    if(isNaN(v)||v<1){showToast('阈值必须 ≥1。','warning');inp.focus();return;}
+    if(v>1440){showToast('阈值不能超过 1440 分钟。','warning');inp.focus();return;}
+    if(seen.has(v)){showToast(`重复值：${v}分钟。`,'warning');inp.focus();return;}
+    seen.add(v); vals.push(v);
+  }
+  vals.sort((a,b)=>b-a);
+  saveReminders(vals);
+  reminderTriggers={}; saveTriggers(reminderTriggers);
+  closeModal(); renderAll();
+  showToast(vals.length?`提醒阈值已更新：${vals.map(t=>t+'分钟前').join('、')}`:'提醒已关闭。','info');
+}
+
+// ============================================================================
+// 观察备注 & 照片
+// ============================================================================
+function openObsNotes(sampleId, totalMinutes) {
+  const sample = samples.find(s => s.id === sampleId);
+  if (!sample) return;
+  const obs = (sample.observations||[]).find(o => o.totalMinutes === totalMinutes);
+  if (!obs) return;
+  const label = pointLabel(totalMinutes);
+
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:600px">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-slate-800">
+            ${esc(sample.name)} · ${label} ${obs.completedTime?'<span class="badge badge-completed ml-2">已完成</span>':''}
+          </h3>
+          <button class="text-slate-400 hover:text-slate-600" onclick="closeModal()"><i class="fa fa-times text-lg"></i></button>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-500 mb-1">观察备注</label>
+          <textarea id="obsNotesField" class="input-field" rows="3" placeholder="例如：液滴均匀、开始聚并、出现分层、形成絮凝...">${esc(obs.observationNotes||'')}</textarea>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-500 mb-2">实验照片 <span class="text-xs text-slate-400">（${obs.photos?.length||0} 张）</span></label>
+          <div id="photoGrid" class="flex flex-wrap gap-2 mb-2">
+            ${(obs.photos||[]).map((p,i)=>`
+              <div class="relative group">
+                <img src="${p}" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid #e2e8f0;cursor:pointer" onclick="viewFullPhoto('${sampleId}',${totalMinutes},${i})">
+                <button class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  onclick="deletePhoto('${sampleId}',${totalMinutes},${i})">×</button>
+              </div>`).join('')}
+            <label class="w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-teal-400 hover:bg-teal-50 transition">
+              <i class="fa fa-plus text-slate-400"></i>
+              <input type="file" accept="image/*" class="hidden" onchange="uploadPhoto('${sampleId}',${totalMinutes},this)">
+            </label>
+          </div>
+          <p class="text-xs text-slate-400">图片自动压缩（≤800px宽），单张约 50-80KB。</p>
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+          <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+          ${obs.completedTime?'':`<button class="btn btn-success" onclick="completeObsAndClose('${sampleId}',${totalMinutes})"><i class="fa fa-check"></i> 完成观察</button>`}
+          <button class="btn btn-primary" onclick="saveObsNotes('${sampleId}',${totalMinutes})"><i class="fa fa-save"></i> 保存</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function saveObsNotes(sampleId, totalMinutes) {
+  const sample = samples.find(s => s.id === sampleId);
+  if (!sample) return;
+  const obs = (sample.observations||[]).find(o => o.totalMinutes === totalMinutes);
+  if (!obs) return;
+  const field = document.getElementById('obsNotesField');
+  obs.observationNotes = field ? field.value.trim() : '';
+  saveSamples(samples);
+  closeModal();
+  renderAll();
+  showToast('备注已保存。', 'info');
+}
+
+function completeObsAndClose(sampleId, totalMinutes) {
+  const sample = samples.find(s => s.id === sampleId);
+  if (!sample) return;
+  const obs = (sample.observations||[]).find(o => o.totalMinutes === totalMinutes);
+  if (!obs) return;
+  const field = document.getElementById('obsNotesField');
+  if (field) obs.observationNotes = field.value.trim();
+  obs.completedTime = new Date().toISOString();
+  delete reminderTriggers[`${sampleId}__${totalMinutes}`];
+  saveTriggers(reminderTriggers);
+  saveSamples(samples);
+  closeModal();
+  renderAll();
+  showToast(`<strong>${esc(sample.name)}</strong> · ${pointLabel(totalMinutes)} 已完成 ✓`, 'info');
+}
+
+function uploadPhoto(sampleId, totalMinutes, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('请选择图片文件。', 'warning'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const maxW = 800;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = h * (maxW / w); w = maxW; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const base64 = canvas.toDataURL('image/jpeg', 0.6);
+      const sample = samples.find(s => s.id === sampleId);
+      if (!sample) return;
+      const obs = (sample.observations||[]).find(o => o.totalMinutes === totalMinutes);
+      if (!obs) return;
+      if (!obs.photos) obs.photos = [];
+      obs.photos.push(base64);
+      if (JSON.stringify(samples).length > 4*1024*1024) showToast('⚠️ 存储空间接近上限，建议导出数据或清理旧照片。', 'warning');
+      saveSamples(samples);
+      openObsNotes(sampleId, totalMinutes);
+      renderDashboard();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function deletePhoto(sampleId, totalMinutes, index) {
+  const sample = samples.find(s => s.id === sampleId);
+  if (!sample) return;
+  const obs = (sample.observations||[]).find(o => o.totalMinutes === totalMinutes);
+  if (!obs || !obs.photos) return;
+  obs.photos.splice(index, 1);
+  saveSamples(samples);
+  openObsNotes(sampleId, totalMinutes);
+  renderDashboard();
+}
+
+function viewFullPhoto(sampleId, totalMinutes, index) {
+  const sample = samples.find(s => s.id === sampleId);
+  if (!sample) return;
+  const obs = (sample.observations||[]).find(o => o.totalMinutes === totalMinutes);
+  if (!obs || !obs.photos || !obs.photos[index]) return;
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="closeModal()" style="background:rgba(0,0,0,.75)">
+      <div style="max-width:90vw;max-height:90vh">
+        <img src="${obs.photos[index]}" style="max-width:90vw;max-height:85vh;border-radius:8px" onclick="event.stopPropagation()">
+        <p class="text-white text-center mt-2 text-sm">${esc(sample.name)} · ${pointLabel(totalMinutes)} · 照片 ${index+1}/${obs.photos.length}</p>
+      </div>
+    </div>`;
+}
+
+function viewPhoto(sampleId, totalMinutes, index) { viewFullPhoto(sampleId, totalMinutes, index); }
+
+// ============================================================================
+// CSV 导出
+// ============================================================================
+function exportCSV() {
+  const rows = [['样品名称','批次','观察点','计划观察时间','完成时间','状态','备注']];
+  samples.forEach(s => {
+    (s.observations||[]).forEach(o => {
+      const st = { pending:'待观察', completed:'已完成', overdue:'已逾期' };
+      rows.push([s.name, s.batch||'', pointLabel(o.totalMinutes), fmtDTPlain(o.scheduledTime), o.completedTime?fmtDTPlain(o.completedTime):'', st[getStatus(o)]||getStatus(o), o.observationNotes||'']);
+    });
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`实验观察数据-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('CSV 已导出。', 'info');
+}
+
+// ============================================================================
+// CSV 导入
+// ============================================================================
+let importData = [];
+
+function openImportModal() {
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal" style="max-width:640px">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-slate-800"><i class="fa fa-upload text-teal-600 mr-2"></i>导入 CSV</h3>
+          <button class="text-slate-400 hover:text-slate-600" onclick="closeModal()"><i class="fa fa-times text-lg"></i></button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">支持本系统导出的 CSV。表头：样品名称, 批次, 观察点, 计划观察时间, 完成时间, 状态, 备注。</p>
+        <input type="file" id="csvFile" accept=".csv" class="input-field mb-4" onchange="previewCSV(this)">
+        <div id="csvPreview" class="mb-4 max-h-56 overflow-y-auto"></div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+          <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+          <button class="btn btn-primary" id="impBtn" onclick="doImportCSV()" disabled><i class="fa fa-upload"></i> 确认导入</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function previewCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result.replace(/^﻿/, '');
+    const lines = text.split(/\r?\n/).filter(l=>l.trim());
+    if (lines.length<2) { showToast('CSV 至少需要表头+1行数据。','warning'); return; }
+
+    const headers = lines[0].split(',').map(h=>h.replace(/"/g,'').trim());
+    const data = lines.slice(1).map(line => {
+      const cols=[]; let buf='', inQ=false;
+      for(const ch of line) {
+        if(ch==='"'){inQ=!inQ;continue;}
+        if(ch===','&&!inQ){cols.push(buf.trim());buf='';}
+        else buf+=ch;
+      }
+      cols.push(buf.trim()); return cols;
+    });
+
+    const idx = {
+      name: headers.findIndex(h=>h.includes('样品名称')),
+      batch: headers.findIndex(h=>h.includes('批次')),
+      point: headers.findIndex(h=>h.includes('观察点')),
+      sch: headers.findIndex(h=>h.includes('计划观察时间')),
+      comp: headers.findIndex(h=>h.includes('完成时间')),
+      status: headers.findIndex(h=>h.includes('状态')),
+      notes: headers.findIndex(h=>h.includes('备注')),
+    };
+    if(idx.name<0||idx.point<0||idx.sch<0){showToast('CSV 缺少必要字段。','warning');return;}
+
+    importData = data.map(row => ({
+      name: row[idx.name]||'', batch: (idx.batch>=0?row[idx.batch]:'')||'',
+      point: row[idx.point]||'', sch: row[idx.sch]||'',
+      comp: (idx.comp>=0?row[idx.comp]:'')||'', status: (idx.status>=0?row[idx.status]:'')||'',
+      notes: (idx.notes>=0?row[idx.notes]:'')||'',
+    })).filter(d=>d.name&&d.sch);
+
+    const prev = importData.slice(0,10);
+    document.getElementById('csvPreview').innerHTML = `
+      <p class="text-xs text-slate-500 mb-2">识别到 <strong>${importData.length}</strong> 条记录：</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>样品</th><th>批次</th><th>观察点</th><th>计划时间</th><th>完成时间</th><th>状态</th></tr></thead>
+        <tbody>${prev.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.batch)}</td><td>${esc(r.point)}</td><td>${r.sch}</td><td>${r.comp||'—'}</td><td>${esc(r.status)}</td></tr>`).join('')}</tbody>
+      </table></div>`;
+    document.getElementById('impBtn').disabled = false;
+  };
+  reader.readAsText(file);
+}
+
+function doImportCSV() {
+  if (!importData.length) return;
+
+  // 解析观察点：支持 "2h30min" / "1h" / "45min" 等格式
+  const parsePoint = (str) => {
+    let h=0, m=0;
+    const hm = str.match(/(\d+)\s*h\s*(\d+)\s*min/i) || str.match(/(\d+)\s*小时\s*(\d+)\s*分/);
+    if (hm) { h=parseInt(hm[1]); m=parseInt(hm[2]); return h*60+m; }
+    const dm = str.match(/(\d+)\s*d\b/i) || str.match(/(\d+)\s*天/);
+    if (dm) return parseInt(dm[1])*1440;
+    const hm2 = str.match(/(\d+)\s*h\b/i) || str.match(/(\d+)\s*小时/);
+    if (hm2) return parseInt(hm2[1])*60;
+    const mm = str.match(/(\d+)\s*min\b/i) || str.match(/(\d+)\s*分钟/);
+    if (mm) return parseInt(mm[1]);
+    return 60; // default 1h
+  };
+
+  const groups = {};
+  importData.forEach(d => {
+    if (!groups[d.name]) groups[d.name] = { batch: d.batch, observations: [], notes: d.notes||'' };
+    if (d.batch && !groups[d.name].batch) groups[d.name].batch = d.batch;
+    const totalMin = parsePoint(d.point);
+    const sch = d.sch ? new Date(d.sch.replace(' ','T')).toISOString() : new Date().toISOString();
+    const comp = d.comp ? new Date(d.comp.replace(' ','T')).toISOString() : null;
+    groups[d.name].observations.push({
+      totalMinutes: totalMin,
+      scheduledTime: sch,
+      completedTime: comp,
+      observationNotes: d.notes||'',
+      photos: [],
+    });
+  });
+
+  let cnt = 0;
+  Object.entries(groups).forEach(([name, g]) => {
+    if (samples.some(s => s.name === name)) return;
+    samples.push({
+      id: uid(), name, batch: g.batch,
+      preparationTime: g.observations.length>0
+        ? new Date(new Date(g.observations[0].scheduledTime).getTime() - pointToMs(g.observations[0].totalMinutes)).toISOString()
+        : new Date().toISOString(),
+      notes: g.notes, observations: g.observations,
+    });
+    cnt++;
+  });
+
+  saveSamples(samples);
+  closeModal(); renderAll();
+  showToast(`已导入 <strong>${cnt}</strong> 个样品，共 ${importData.length} 条记录。`, 'info');
+  importData = [];
+}
+
+// ============================================================================
+// 模态框
+// ============================================================================
+function closeModal() { document.getElementById('modalContainer').innerHTML = ''; }
+
+// ============================================================================
+// 全局渲染
+// ============================================================================
+function renderAll() {
+  renderPointTags();
+  renderSampleList();
+  renderReminderTags();
+  renderDashboard();
+  updateNextCard();
+  updateStats();
+  updateAllCountdowns();
+}
+
+// ============================================================================
+// 主循环
+// ============================================================================
+function tick() { updateAllCountdowns(); checkReminders(); }
+
+// ============================================================================
+// 初始化
+// ============================================================================
+function init() {
+  samples = loadSamples();
+  reminderTriggers = loadTriggers();
+  renderAll();
+  reqNotif();
+  ticker = setInterval(tick, 1000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState==='visible') { updateAllCountdowns(); checkReminders(); reqNotif(); }
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey||e.metaKey) && e.key==='n') { e.preventDefault(); openSampleModal(); }
+  });
+
+  console.log('🧪 实验室观察管理系统已就绪。');
+  console.log(`   ${samples.length} 个样品 · ${loadPoints().length} 个观察点`);
+}
+
+init();
+</script>
+
+</body>
+</html>
