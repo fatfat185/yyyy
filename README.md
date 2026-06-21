@@ -98,3 +98,15 @@ Chrome、Edge、Firefox、Safari 全支持。
 ## 许可证
 
 MIT License
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=lab-observation-manager.html">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>正在打开实验室观察管理系统...</p>
+</body>
+</html>
+
